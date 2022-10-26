@@ -1,10 +1,11 @@
 import {ethers, upgrades} from "hardhat";
 import { expect } from "chai";
+import {BigNumberish} from "ethers";
 
-const toWei = (value) => ethers.utils.parseEther(value.toString());
+const toWei = (value: BigNumberish) => ethers.utils.parseEther(value.toString());
 // const toWei = (value) => value;
 
-const fromWei = (value) =>
+const fromWei = (value: BigNumberish) =>
     ethers.utils.formatEther(
         typeof value === "string" ? value : value.toString()
     );
@@ -67,3 +68,24 @@ describe("Exchange with erc20 test", function () {
         console.log("Exchange LP tokens after removing liquidity: ", fromWei(await exchange.balanceOf(owner.address)));
     });
 });
+
+/*
+Exchange LP tokens before adding liquidity:  0.0
+Exchange LP tokens after adding liquidity:  100.0
+--------------------------
+Exchange Erc20 balance:  200.0
+Exchange Eth balance:  100.0
+current price:  500
+Erc20 amount to sell 1eth:  1.960590157441330824
+Eth amount to sell 2 erc20:  0.980295078720665412
+--------------------------
+User1 eth balance: 10000.0
+User1 eth balance after exchange: 9989.999906304223301385
+User1 token balance: 18.01637852593266606
+--------------------------
+Owner eth balance: 9899.993369781658215056
+Owner token balance: 999800.0
+Owner eth balance after: 10009.993295339209041552, diff(109.999925557550826496)
+Owner token balance after: 999981.98362147406733394, diff(181.98362147406733394)
+Exchange LP tokens after removing liquidity:  0.0
+ */

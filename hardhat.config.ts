@@ -8,8 +8,23 @@ const ANVIL_PRIVATE_KEY =  '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae
 const GORELI_PRIVATE_KEY = '0x108c5d0179dea4b9100b0d7f5b9139fb35ce3e2389586e9f0d1d47cfa6a7ddc6';
 
 const config: HardhatUserConfig = {
-  solidity: "0.8.17",
+  solidity: {
+    compilers: [
+      {
+        version: "0.8.17",
+      },
+      {
+        version: "0.6.6",
+      },
+      {
+        version: "0.5.16",
+      },
+    ],
+  },
   networks: {
+    hardhat: {
+      allowUnlimitedContractSize: true,
+    },
     anvil: {
       url: `http://127.0.0.1:8545`,
       accounts: [ANVIL_PRIVATE_KEY]
