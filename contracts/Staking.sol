@@ -69,15 +69,15 @@ contract Staking is ERC20 {
         token.transferFrom(msg.sender, address(this), _reward);
     }
 
-    function transfer(address to, uint256 amount) public override returns (bool) {
-        return super.transfer(to, calculateAmountValue(to, amount));
-    }
-
-    function transferFrom(
+    function _transfer(
         address from,
         address to,
         uint256 amount
-    ) public virtual override returns (bool) {
-        return super.transferFrom(from, to, calculateAmountValue(to, amount));
+    ) internal override {
+        require(from != address(0), "ERC20: transfer from the zero address");
+        require(to != address(0), "ERC20: transfer to the zero address");
+
+        _burn(from, calculateAmountValue(from, amount));
+        _mint(to, calculateAmountValue(to, amount));
     }
 }
