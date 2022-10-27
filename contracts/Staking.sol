@@ -1,19 +1,18 @@
 pragma solidity ^0.8.13;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract Staking {
+contract Staking is ERC20 {
     uint16 constant BP = 10_000;
 
     IERC20 public immutable token;
 
     uint256 public sInBP;
-    uint256 public total;
 
-    mapping (address => uint) stake;
     mapping (address => uint) s0InBp;
 
-    constructor(address _token) {
+    constructor(address _token) ERC20("Stacking", "STK") {
         require(_token != address(0), "wrong address");
 
         token = IERC20(_token);
@@ -24,43 +23,61 @@ contract Staking {
 
         token.transferFrom(msg.sender, address(this), _amount);
 
-        stake[msg.sender] += _amount;
-        total += _amount;
+        _mint(msg.sender, _amount);
 
         s0InBp[msg.sender] = sInBP;
     }
 
-    function balanceOf(address _user) public view returns(uint256) {
-        uint deposited = stake[_user];
-        uint reward = (deposited * (sInBP - s0InBp[_user])) / BP;
+    function balanceOf(address _user) public override view returns(uint256) {
+        uint256 balance = super.balanceOf(_user);
+        return balance + calculateRewardValue(_user, balance);
+    }
 
-        return deposited + reward;
+    function withdrawBalance(address _user) public view returns(uint256) {
+        return super.balanceOf(_user) + calculateRewardValue(_user, super.balanceOf(_user));
+    }
+
+    function calculateRewardValue(address _user, uint256 _amount) public view returns(uint256) {
+        return (_amount * (sInBP - s0InBp[_user])) / BP;
+    }
+
+    function calculateAmountValue(address _user, uint256 _rewardedAmount) public view returns(uint256) {
+        return (_rewardedAmount * BP) / (sInBP - s0InBp[_user]);
     }
 
     function withdrawAmount(uint256 _amount) public returns(uint256) {
-        uint deposited = stake[msg.sender];
+        uint deposited = super.balanceOf(msg.sender);
         require(deposited > 0, "no deposit");
         require(deposited >= _amount, "out of balance");
 
-        uint _reward = (_amount * (sInBP - s0InBp[msg.sender])) / BP;
+        uint _withdraw = _amount + calculateRewardValue(msg.sender, _amount);
 
-        token.transfer(msg.sender, _amount + _reward);
+        token.transfer(msg.sender, _withdraw);
+        _burn(msg.sender, _amount);
 
-        total -= _amount;
-        stake[msg.sender] -= _amount;
-
-        return _amount + _reward;
+        return _withdraw;
     }
 
     function withdraw() public returns(uint256) {
-        return withdrawAmount(stake[msg.sender]);
+        return withdrawAmount(super.balanceOf(msg.sender));
     }
 
     function distribute(uint _reward) public {
-        require(total > 0, "no deposits");
+        require(totalSupply() > 0, "no deposits");
 
-        sInBP += (_reward * BP) / total;
-
+        sInBP += (_reward * BP) / totalSupply();
         token.transferFrom(msg.sender, address(this), _reward);
+    }
+
+    function transfer(address to, uint256 amount) public override returns (bool) {
+        return super.transfer(to, calculateAmountValue(to, amount));
+    }
+
+    function transferFrom(
+        address from,
+        address to,
+        uint256 amount
+    ) public virtual override returns (bool) {
+        return super.transferFrom(from, to, calculateAmountValue(to, amount));
     }
 }

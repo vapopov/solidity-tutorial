@@ -6,7 +6,7 @@ import {
     Staking__factory
 } from "../typechain-types";
 
-const toWei = (value: BigNumberish) => ethers.utils.parseEther(value.toString());
+const toWei = (value) => ethers.utils.parseEther(value.toString());
 // const toWei = (value) => value;
 
 const fromWei = (value: BigNumberish) =>
@@ -76,20 +76,31 @@ describe("Stacking custom erc20 test", function () {
         console.log("User2 token balance: %s", fromWei(await token.balanceOf(user2.address)));
         expect(await token.balanceOf(user2.address)).to.equal(toWei(300));
 
+        // Make additional distribution to check if user2 didn't get any amount after withdraw.
+        await staking.distribute(toWei(300));
+        console.log("Make additional distribution of 300 tokens after user2 withdraw.");
+        expect(await staking.withdrawBalance(user2.address)).to.equal(toWei(0));
+
         // Partial withdraw for user1 of tokens 2 times by 50 tokens, we should receive final amount 300,
         // where 100 was initial deposit and 2 times of distribution by 100 tokens.
         console.log("User1 token balance:", fromWei(await token.balanceOf(user1.address)));
         console.log("Withdraw 2 times by 50 of user1");
+
+        console.log("====> amount: %s, withdraw: %s",
+            fromWei(await staking.calculateAmountValue(user1.address, toWei(100))),
+            fromWei(await staking.calculateRewardValue(user1.address, toWei(28.571428571428571428))),
+        );
+
         await staking.connect(user1).withdrawAmount(toWei(50));
         await staking.connect(user1).withdrawAmount(toWei(50));
         console.log("User1 token balance:", fromWei(await token.balanceOf(user1.address)));
-        expect(await token.balanceOf(user1.address)).to.equal(toWei(300));
+        expect(await token.balanceOf(user1.address)).to.equal(toWei(450));
 
         // Final balance left on the staking contract must be 300 tokens, which owns user3
         // and it wasn't withdrawn.
         const stakingBalance = await token.balanceOf(staking.address);
         console.log("+ Staking contract balance:", fromWei(stakingBalance));
-        expect(stakingBalance).to.equal(toWei(300));
+        expect(stakingBalance).to.equal(toWei(450));
     });
 });
 
